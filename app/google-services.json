@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "110601899418",
+    "firebase_url": "https://checklo-ae99a.firebaseio.com",
+    "project_id": "checklo-ae99a",
+    "storage_bucket": "checklo-ae99a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:110601899418:android:0184d6cd6763b6c44d3e23",
+        "android_client_info": {
+          "package_name": "com.example.checklo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "110601899418-1jeakog7an2psnq7n7tatjo8k9d5e9em.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBah4ochWRbLZrr_N8V_u3Fbi7_8tx7r_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "110601899418-1jeakog7an2psnq7n7tatjo8k9d5e9em.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
