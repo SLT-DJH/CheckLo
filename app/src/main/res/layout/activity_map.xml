@@ -31,10 +31,10 @@
 
         <View
             android:layout_width="match_parent"
-            android:layout_height="1dp"
+            android:layout_height="3dp"
             android:layout_centerInParent="true"
             android:layout_gravity="center_horizontal"
-            android:background="#F0F0F0" />
+            android:background="@drawable/topshadow" />
 
         <LinearLayout
             android:layout_width="match_parent"

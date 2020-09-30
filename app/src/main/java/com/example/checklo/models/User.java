@@ -1,5 +1,6 @@
 package com.example.checklo.models;
 
+import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -9,12 +10,14 @@ public class User implements Parcelable {
     private String user_id;
     private String username;
     private String avatar;
+    private String introduction;
 
-    public User(String email, String user_id, String username, String avatar) {
+    public User(String email, String user_id, String username, String avatar, String introduction) {
         this.email = email;
         this.user_id = user_id;
         this.username = username;
         this.avatar = avatar;
+        this.introduction = introduction;
     }
 
     public User() {
@@ -26,6 +29,7 @@ public class User implements Parcelable {
         user_id = in.readString();
         username = in.readString();
         avatar = in.readString();
+        introduction = in.readString();
     }
 
     public static final Parcelable.Creator<User> CREATOR = new Parcelable.Creator<User>() {
@@ -76,6 +80,14 @@ public class User implements Parcelable {
         this.username = username;
     }
 
+    public String getUserintroduction() {
+        return introduction;
+    }
+
+    public void setUserintroduction(String introduction) {
+        this.introduction = introduction;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -83,6 +95,7 @@ public class User implements Parcelable {
                 ", user_id='" + user_id + '\'' +
                 ", username='" + username + '\'' +
                 ", avatar='" + avatar + '\'' +
+                ", introduction='" + introduction + '\'' +
                 '}';
     }
 
@@ -97,6 +110,7 @@ public class User implements Parcelable {
         dest.writeString(user_id);
         dest.writeString(username);
         dest.writeString(avatar);
+        dest.writeString(introduction);
     }
 
 }
