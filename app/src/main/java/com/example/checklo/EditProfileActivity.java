@@ -34,7 +34,7 @@ import com.theartofdev.edmodo.cropper.CropImageView;
 import java.io.ByteArrayOutputStream;
 
 public class EditProfileActivity extends AppCompatActivity implements View.OnClickListener {
-    private static final String TAG = "ProfileActivity";
+    private static final String TAG = "EditProfileActivity";
 
     private ImageView profileImage;
     private TextView userName;
@@ -81,6 +81,7 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
         String avatar = "";
         try{
             avatar = ((UserClient)getApplicationContext()).getUser().getAvatar();
+
         }catch (NumberFormatException e){
             Log.e(TAG, "retrieveProfileImage: no avatar image. Setting default. " + e.getMessage() );
         }
@@ -174,6 +175,7 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
 
         super.onActivityResult(requestCode, resultCode, data);
     }
+
     @Override
     public void onClick(View v) {
         switch (v.getId()){
@@ -182,6 +184,7 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
                 break;
             }
             case R.id.changePictureImageView:{
+                changePicture();
                 break;
             }
             case R.id.backBarImageView:{

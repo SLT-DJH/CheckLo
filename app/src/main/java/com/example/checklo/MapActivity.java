@@ -1,6 +1,8 @@
 package com.example.checklo;
 
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -8,7 +10,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
+import com.example.checklo.models.User;
+
 public class MapActivity extends AppCompatActivity implements View.OnClickListener {
+
+    private static final String TAG = "MapActivity";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {

@@ -20,7 +20,9 @@ import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.example.checklo.models.User;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -69,6 +71,21 @@ public class ProfileFragment extends Fragment implements View.OnClickListener {
         String avatar = "";
         try{
             avatar =((UserClient)getActivity().getApplicationContext()).getUser().getAvatar();
+            Log.d(TAG, "getAvatar: " + ((UserClient)getActivity().getApplicationContext()).getUser().getAvatar());
+            if (avatar == null) {
+                String drawablePath = getURLForResource(R.drawable.profile_default);
+
+                User user = ((UserClient)getActivity().getApplicationContext()).getUser();
+                user.setAvatar(drawablePath);
+
+                FirebaseFirestore.getInstance()
+                        .collection(getString(R.string.collection_users))
+                        .document(FirebaseAuth.getInstance().getUid())
+                        .set(user);
+
+                avatar = drawablePath;
+            }
+
         }catch (NumberFormatException e){
             Log.e(TAG, "retrieveProfileImage: no avatar image. Setting default. " + e.getMessage() );
         }
@@ -112,6 +129,10 @@ public class ProfileFragment extends Fragment implements View.OnClickListener {
 
             }
         }
+    }
+
+    private String getURLForResource(int resId) {
+        return Uri.parse("android.resource://" + R.class.getPackage().getName() + "/" + resId).toString();
     }
 
     public void goEditProfile(){
