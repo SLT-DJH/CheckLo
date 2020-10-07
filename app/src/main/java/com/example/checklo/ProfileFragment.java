@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,8 +22,15 @@ import androidx.fragment.app.Fragment;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.checklo.models.User;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -64,36 +72,37 @@ public class ProfileFragment extends Fragment implements View.OnClickListener {
     }
 
     private void retrieveProfileImage(){
-        RequestOptions requestOptions = new RequestOptions()
-                .error(R.drawable.profile_default)
-                .placeholder(R.drawable.profile_default);
-
         String avatar = "";
         try{
-            avatar =((UserClient)getActivity().getApplicationContext()).getUser().getAvatar();
-            Log.d(TAG, "getAvatar: " + ((UserClient)getActivity().getApplicationContext()).getUser().getAvatar());
-            if (avatar == null) {
-                String drawablePath = getURLForResource(R.drawable.profile_default);
 
-                User user = ((UserClient)getActivity().getApplicationContext()).getUser();
-                user.setAvatar(drawablePath);
-
-                FirebaseFirestore.getInstance()
-                        .collection(getString(R.string.collection_users))
-                        .document(FirebaseAuth.getInstance().getUid())
-                        .set(user);
-
-                avatar = drawablePath;
-            }
+            avatar = ((UserClient)getActivity().getApplicationContext()).getUser().getAvatar();
 
         }catch (NumberFormatException e){
             Log.e(TAG, "retrieveProfileImage: no avatar image. Setting default. " + e.getMessage() );
         }
 
-        Glide.with(getActivity())
-                .setDefaultRequestOptions(requestOptions)
-                .load(Uri.parse(avatar))
-                .into(profileImage);
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageReference = storage.getReferenceFromUrl("gs://checklo-ae99a.appspot.com").child("Profile/" + avatar + ".png");
+        Log.d(TAG, "Storage Url :" + storageReference);
+        storageReference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
+            @Override
+            public void onComplete(@NonNull Task<Uri> task) {
+                if (task.isSuccessful()){
+                    Glide.with(getActivity())
+                            .load(task.getResult())
+                            .into(profileImage);
+
+                    Toast.makeText(getActivity().getApplicationContext(), "다운로드 완료!", Toast.LENGTH_SHORT).show();
+                }else {
+                    Toast.makeText(getActivity().getApplicationContext(), "태스크 실패!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(getActivity().getApplicationContext(), "다운로드 실패!", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

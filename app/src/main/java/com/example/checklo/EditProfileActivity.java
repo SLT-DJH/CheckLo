@@ -26,12 +26,21 @@ import androidx.core.content.ContextCompat;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.checklo.models.User;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.ByteArrayOutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class EditProfileActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "EditProfileActivity";
@@ -74,22 +83,38 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
     }
 
     private void retrieveProfileImage(){
-        RequestOptions requestOptions = new RequestOptions()
-                .error(R.drawable.profile_default)
-                .placeholder(R.drawable.profile_default);
-
         String avatar = "";
         try{
+
             avatar = ((UserClient)getApplicationContext()).getUser().getAvatar();
 
         }catch (NumberFormatException e){
             Log.e(TAG, "retrieveProfileImage: no avatar image. Setting default. " + e.getMessage() );
         }
 
-        Glide.with(EditProfileActivity.this)
-                .setDefaultRequestOptions(requestOptions)
-                .load(Uri.parse(avatar))
-                .into(profileImage);
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageReference = storage.getReferenceFromUrl("gs://checklo-ae99a.appspot.com").child("Profile/" + avatar + ".png");
+        Log.d(TAG, "Storage Url :" + storageReference);
+        storageReference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
+            @Override
+            public void onComplete(@NonNull Task<Uri> task) {
+                if (task.isSuccessful()){
+                    Glide
+                            .with(EditProfileActivity.this)
+                            .load(task.getResult())
+                            .into(profileImage);
+
+                    Toast.makeText(getApplicationContext(), "다운로드 완료!", Toast.LENGTH_SHORT).show();
+                }else {
+                    Toast.makeText(getApplicationContext(), "태스크 실패!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(getApplicationContext(), "다운로드 실패!", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     public void changePicture(){
@@ -161,13 +186,22 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
                         .load(resultUri)
                         .into(profileImage);
 
-                User user = ((UserClient)getApplicationContext()).getUser();
-                user.setAvatar(resultUri.toString());
+                FirebaseStorage storage = FirebaseStorage.getInstance();
 
-                FirebaseFirestore.getInstance()
-                        .collection(getString(R.string.collection_users))
-                        .document(FirebaseAuth.getInstance().getUid())
-                        .set(user);
+                StorageReference storageReference = storage.getReferenceFromUrl("gs://checklo-ae99a.appspot.com")
+                        .child("Profile/" + ((UserClient)getApplicationContext()).getUser().getUser_id() + ".png");
+
+                storageReference.putFile(resultUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                        Toast.makeText(getApplicationContext(), "업로드 완료!", Toast.LENGTH_SHORT).show();
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(getApplicationContext(), "업로드 실패!", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }else if(resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE){
                 Exception error = result.getError();
             }

@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "110601899418-05vkp8d6ftmgstb5dtfr3si1m49kjbjp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.checklo",
+            "certificate_hash": "51dce64d266d53385283dd8345aa8ab450d75a26"
+          }
+        },
+        {
           "client_id": "110601899418-1jeakog7an2psnq7n7tatjo8k9d5e9em.apps.googleusercontent.com",
           "client_type": 3
         }

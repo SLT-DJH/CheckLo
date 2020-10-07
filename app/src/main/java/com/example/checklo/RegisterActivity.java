@@ -1,6 +1,7 @@
 package com.example.checklo;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -21,6 +22,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import static android.text.TextUtils.isEmpty;
 import static com.example.checklo.util.Check.doStringsMatch;
@@ -63,16 +66,26 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                         if(task.isSuccessful()){
                             Log.d(TAG, "onComplete: AuthState: " + FirebaseAuth.getInstance().getCurrentUser().getUid());
 
+                            String drawablePath = getURLForResource(R.drawable.profile_default);
+                            Uri drawableUri = Uri.parse(drawablePath);
+
+                            FirebaseStorage storage = FirebaseStorage.getInstance();
+
+                            StorageReference storageReference = storage.getReferenceFromUrl("gs://checklo-ae99a.appspot.com")
+                                    .child("Profile/" + FirebaseAuth.getInstance().getUid() + ".png");
+                            storageReference.putFile(drawableUri);
+
                             User user = new User();
                             user.setEmail(email);
                             user.setUsername(email.substring(0, email.indexOf("@")));
                             user.setUser_id(FirebaseAuth.getInstance().getUid());
+                            user.setAvatar(FirebaseAuth.getInstance().getUid());
 
                             FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder().setTimestampsInSnapshotsEnabled(true).build();
 
                             mDb.setFirestoreSettings(settings);
 
-                            DocumentReference newUserRef = mDb.collection("Users").document(FirebaseAuth.getInstance().getUid());
+                            DocumentReference newUserRef = mDb.collection(getString(R.string.collection_users)).document(FirebaseAuth.getInstance().getUid());
 
                             newUserRef.set(user).addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
@@ -104,6 +117,10 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
         startActivity(intent);
         finish();
+    }
+
+    private String getURLForResource(int resId) {
+        return Uri.parse("android.resource://" + R.class.getPackage().getName() + "/" + resId).toString();
     }
 
     private void showDialog(){
