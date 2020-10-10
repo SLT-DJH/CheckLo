@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.checklo.models.User;
+import com.example.checklo.models.UserLocation;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -33,11 +34,21 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.GeoPoint;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+
+import java.util.ArrayList;
 
 import static com.example.checklo.Constants.ERROR_DIALOG_REQUEST;
 import static com.example.checklo.Constants.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION;
@@ -47,9 +58,17 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
     private static final String TAG = "MapActivity";
 
+    //widgets
+    private User mUser;
+
     //vars
+    private ListenerRegistration mUserEventListener;
     private boolean mLocationPermissionGranted = false;
     private FusedLocationProviderClient mFusedLocationClient;
+    private UserLocation mUserLocation;
+    private FirebaseFirestore mDb;
+    private ArrayList<UserLocation> mUserLocationList = new ArrayList<>();
+    private ArrayList<User> mUserList = new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -57,6 +76,9 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         setContentView(R.layout.activity_map);
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        mDb = FirebaseFirestore.getInstance();
+
+        getUsers();
 
         Fragment mapfragment = new MapFragment();
         getSupportFragmentManager().beginTransaction().replace(R.id.container, mapfragment).commit();
@@ -76,6 +98,101 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
     }
 
+    private void getUsers(){
+
+       CollectionReference usersRef = mDb
+                .collection(getString(R.string.collection_users));
+
+        mUserEventListener = usersRef.addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@javax.annotation.Nullable QuerySnapshot queryDocumentSnapshots, @javax.annotation.Nullable FirebaseFirestoreException e) {
+                if (e != null) {
+                    Log.e(TAG, "onEvent: Listen failed.", e);
+                    return;
+                }
+
+                if(queryDocumentSnapshots != null){
+
+                    // Clear the list and add all the users again
+                    mUserList.clear();
+                    mUserList = new ArrayList<>();
+
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        User user = doc.toObject(User.class);
+                        mUserList.add(user);
+                        getUserLocation(user);
+                    }
+
+                    Log.d(TAG, "onEvent: user list size: " + mUserList.size());
+                }
+            }
+        });
+
+
+
+    }
+
+    private void getUserLocation(User user) {
+        DocumentReference locationRef = mDb.collection(getString(R.string.collection_user_locations))
+                .document(user.getUser_id());
+
+        locationRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if(task.isSuccessful()){
+                    if(task.getResult().toObject(UserLocation.class) != null) {
+                        mUserLocationList.add(task.getResult().toObject(UserLocation.class));
+                    }
+                }
+
+            }
+        });
+
+    }
+
+    private void getUserDetails(){
+        if(mUserLocation == null){
+            mUserLocation = new UserLocation();
+
+            DocumentReference userRef = mDb.collection(getString(R.string.collection_users)).document(FirebaseAuth.getInstance().getUid());
+
+            userRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                    if(task.isSuccessful()){
+                        Log.d(TAG, "onComplete: successfully got the user details.");
+
+                        User user = task.getResult().toObject(User.class);
+                        mUserLocation.setUser(user);
+                        ((UserClient)getApplicationContext()).setUser(user);
+                        getLastKnownLocation();
+                    }
+                }
+            });
+        }
+        else {
+            getLastKnownLocation();
+        }
+    }
+
+    private void saveUserLocation(){
+        if(mUserLocation != null){
+            DocumentReference locationRef = mDb.collection(getString(R.string.collection_user_locations))
+                    .document(FirebaseAuth.getInstance().getUid());
+
+            locationRef.set(mUserLocation).addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    if(task.isSuccessful()) {
+                        Log.d(TAG, "saveUserLocation: \ninserted user location into database." + "\n latitude: " +
+                                mUserLocation.getGeo_point().getLatitude() +
+                                "\n longitude: " + mUserLocation.getGeo_point().getLongitude());
+                    }
+                }
+            });
+        }
+    }
+
     private void getLastKnownLocation(){
         Log.d(TAG, "getLastKnownLocation: called.");
 
@@ -92,6 +209,10 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
                     GeoPoint geoPoint = new GeoPoint(location.getLatitude(), location.getLongitude());
                     Log.d(TAG, "onComplete: latitude: " + geoPoint.getLatitude());
                     Log.d(TAG, "onComplete: longitude: " + geoPoint.getLongitude());
+
+                    mUserLocation.setGeo_point(geoPoint);
+                    mUserLocation.setTimestamp(null);
+                    saveUserLocation();
 
                 }
 
@@ -143,7 +264,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mLocationPermissionGranted = true;
-            getLastKnownLocation();
+            getUserDetails();
         } else {
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
@@ -195,7 +316,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         switch (requestCode) {
             case PERMISSIONS_REQUEST_ENABLE_GPS: {
                 if(mLocationPermissionGranted){
-                    getLastKnownLocation();
+                    getUserDetails();
                 }
                 else{
                     getLocationPermission();
@@ -211,7 +332,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
         if(checkMapServices()){
             if(mLocationPermissionGranted){
-                getLastKnownLocation();
+                getUserDetails();
             }
             else{
                 getLocationPermission();
