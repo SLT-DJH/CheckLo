@@ -22,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.example.checklo.models.User;
 import com.example.checklo.models.UserLocation;
@@ -57,6 +58,7 @@ import static com.example.checklo.Constants.PERMISSIONS_REQUEST_ENABLE_GPS;
 public class MapActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "MapActivity";
+    private static Integer status = 1001;
 
     //widgets
     private User mUser;
@@ -80,8 +82,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
         getUsers();
 
-        Fragment mapfragment = new MapFragment();
-        getSupportFragmentManager().beginTransaction().replace(R.id.container, mapfragment).commit();
+        inflateLocationFragment();
 
         ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
         profile.setImageResource(R.drawable.profile);
@@ -341,55 +342,85 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
     }
 
+    private void inflateLocationFragment(){
+        Log.d(TAG, "inflateLocationFragment called");
+        Fragment mapfragment = new MapFragment();
+        Bundle bundle = new Bundle();
+        bundle.putParcelableArrayList(getString(R.string.intent_user_list), mUserList);
+        bundle.putParcelableArrayList(getString(R.string.intent_user_locations), mUserLocationList);
+        mapfragment.setArguments(bundle);
+
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, mapfragment).commit();
+    }
+
     @Override
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.profileMenuButton:{
-                Fragment profilefragment = new ProfileFragment();
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, profilefragment).commit();
+                if (status != 1000) {
+                    status = 1000;
 
-                ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
-                profile.setImageResource(R.drawable.profile_click);
+                    Fragment profilefragment = new ProfileFragment();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.container, profilefragment).commit();
 
-                ImageView location = (ImageView) findViewById(R.id.locationMenuButton);
-                location.setImageResource(R.drawable.location);
+                    ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
+                    profile.setImageResource(R.drawable.profile_click);
 
-                ImageView chatboard = (ImageView) findViewById(R.id.chatboardMenuButton);
-                chatboard.setImageResource(R.drawable.chat);
+                    ImageView location = (ImageView) findViewById(R.id.locationMenuButton);
+                    location.setImageResource(R.drawable.location);
 
-                break;
+                    ImageView chatboard = (ImageView) findViewById(R.id.chatboardMenuButton);
+                    chatboard.setImageResource(R.drawable.chat);
+
+                    break;
+                }else{
+                    break;
+                }
+
 
             }
             case R.id.locationMenuButton:{
-                Fragment mapfragment = new MapFragment();
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, mapfragment).commit();
+                if(status != 1001){
+                    status = 1001;
 
-                ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
-                profile.setImageResource(R.drawable.profile);
+                    inflateLocationFragment();
 
-                ImageView location = (ImageView) findViewById(R.id.locationMenuButton);
-                location.setImageResource(R.drawable.location_clicked);
+                    ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
+                    profile.setImageResource(R.drawable.profile);
 
-                ImageView chatboard = (ImageView) findViewById(R.id.chatboardMenuButton);
-                chatboard.setImageResource(R.drawable.chat);
+                    ImageView location = (ImageView) findViewById(R.id.locationMenuButton);
+                    location.setImageResource(R.drawable.location_clicked);
 
-                break;
+                    ImageView chatboard = (ImageView) findViewById(R.id.chatboardMenuButton);
+                    chatboard.setImageResource(R.drawable.chat);
+
+                    break;
+                }else{
+                    break;
+                }
 
             }
             case R.id.chatboardMenuButton:{
-                Fragment chatboardfragment = new ChatboardFragment();
-                getSupportFragmentManager().beginTransaction().replace(R.id.container, chatboardfragment).commit();
+                if (status != 1002){
+                    status = 1002;
 
-                ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
-                profile.setImageResource(R.drawable.profile);
+                    Fragment chatboardfragment = new ChatboardFragment();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.container, chatboardfragment).commit();
 
-                ImageView location = (ImageView) findViewById(R.id.locationMenuButton);
-                location.setImageResource(R.drawable.location);
+                    ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
+                    profile.setImageResource(R.drawable.profile);
 
-                ImageView chatboard = (ImageView) findViewById(R.id.chatboardMenuButton);
-                chatboard.setImageResource(R.drawable.chat_clicked);
+                    ImageView location = (ImageView) findViewById(R.id.locationMenuButton);
+                    location.setImageResource(R.drawable.location);
 
-                break;
+                    ImageView chatboard = (ImageView) findViewById(R.id.chatboardMenuButton);
+                    chatboard.setImageResource(R.drawable.chat_clicked);
+
+                    break;
+                }else{
+                    break;
+                }
+
             }
         }
     }

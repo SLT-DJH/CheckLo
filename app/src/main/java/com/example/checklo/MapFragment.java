@@ -16,6 +16,8 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
+import com.example.checklo.models.User;
+import com.example.checklo.models.UserLocation;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -23,10 +25,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
+
 import static com.example.checklo.Constants.MAPVIEW_BUNDLE_KEY;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnInfoWindowClickListener {
-    private static final String TAG = "UserListFragment";
+    private static final String TAG = "MapFragment";
     private static final int LOCATION_UPDATE_INTERVAL = 3000;
 
     //widgets
@@ -35,17 +39,35 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
 
     //vars
     private GoogleMap mGoogleMap;
+    private ArrayList<User> mUserList = new ArrayList<>();
+    private ArrayList<UserLocation> mUserLocationList = new ArrayList<>();
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if(getArguments() != null){
+            mUserList = getArguments().getParcelableArrayList(getString(R.string.intent_user_list));
+            mUserLocationList = getArguments().getParcelableArrayList(getString(R.string.intent_user_locations));
+        }
+    }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.d(TAG, "MapFragment started");
         View view = inflater.inflate(R.layout.fragment_location, container, false);
 
         mMapView =(MapView) view.findViewById(R.id.user_list_map);
         mMapContainer = view.findViewById(R.id.map_container);
 
         initGoogleMap(savedInstanceState);
+
+        if(mUserLocationList != null) {
+            for(UserLocation userLocation : mUserLocationList){
+                Log.d(TAG, "onCreateView: user location: " + userLocation.getUser().getUsername());
+                Log.d(TAG, "onCreateView: geopoint: " + userLocation.getGeo_point().getLatitude() + ", " + userLocation.getGeo_point().getLongitude());
+            }
+        }
 
         return view;
     }

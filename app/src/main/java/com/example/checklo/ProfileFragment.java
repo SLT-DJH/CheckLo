@@ -72,37 +72,42 @@ public class ProfileFragment extends Fragment implements View.OnClickListener {
     }
 
     private void retrieveProfileImage(){
-        String avatar = "";
-        try{
+        if (isAdded()){
+            String avatar = "";
+            try{
 
-            avatar = ((UserClient)getActivity().getApplicationContext()).getUser().getAvatar();
+                avatar = ((UserClient)getActivity().getApplicationContext()).getUser().getAvatar();
 
-        }catch (NumberFormatException e){
-            Log.e(TAG, "retrieveProfileImage: no avatar image. Setting default. " + e.getMessage() );
-        }
+            }catch (NumberFormatException e){
+                Log.e(TAG, "retrieveProfileImage: no avatar image. Setting default. " + e.getMessage() );
+            }
 
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageReference = storage.getReferenceFromUrl("gs://checklo-ae99a.appspot.com").child("Profile/" + avatar + ".png");
-        Log.d(TAG, "Storage Url :" + storageReference);
-        storageReference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
-            @Override
-            public void onComplete(@NonNull Task<Uri> task) {
-                if (task.isSuccessful()){
-                    Glide.with(getActivity())
-                            .load(task.getResult())
-                            .into(profileImage);
+            FirebaseStorage storage = FirebaseStorage.getInstance();
+            StorageReference storageReference = storage.getReferenceFromUrl("gs://checklo-ae99a.appspot.com").child("Profile/" + avatar + ".png");
+            Log.d(TAG, "Storage Url :" + storageReference);
+            storageReference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if(isAdded()){
+                        if (task.isSuccessful()){
 
-                    Toast.makeText(getActivity().getApplicationContext(), "다운로드 완료!", Toast.LENGTH_SHORT).show();
-                }else {
-                    Toast.makeText(getActivity().getApplicationContext(), "태스크 실패!", Toast.LENGTH_SHORT).show();
+                            Glide.with(getActivity())
+                                    .load(task.getResult())
+                                    .into(profileImage);
+
+                            Toast.makeText(getActivity().getApplicationContext(), "다운로드 완료!", Toast.LENGTH_SHORT).show();
+                        }else {
+                            Toast.makeText(getActivity().getApplicationContext(), "태스크 실패!", Toast.LENGTH_SHORT).show();
+                        }
+                    }
                 }
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Toast.makeText(getActivity().getApplicationContext(), "다운로드 실패!", Toast.LENGTH_SHORT).show();
-            }
-        });
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Toast.makeText(getActivity().getApplicationContext(), "다운로드 실패!", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     @Override
