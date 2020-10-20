@@ -13,17 +13,21 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.checklo.models.User;
 import com.example.checklo.models.UserLocation;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 
@@ -35,12 +39,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
 
     //widgets
     private MapView mMapView;
-    private LinearLayout mMapContainer;
+    private ConstraintLayout mMapContainer;
 
     //vars
     private GoogleMap mGoogleMap;
     private ArrayList<User> mUserList = new ArrayList<>();
     private ArrayList<UserLocation> mUserLocationList = new ArrayList<>();
+    private LatLngBounds mMapBoundary;
+    private UserLocation mUserPosition;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -63,13 +69,39 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
         initGoogleMap(savedInstanceState);
 
         if(mUserLocationList != null) {
+            Log.d(TAG, "mUserLocationList size :" + mUserLocationList.size());
             for(UserLocation userLocation : mUserLocationList){
                 Log.d(TAG, "onCreateView: user location: " + userLocation.getUser().getUsername());
                 Log.d(TAG, "onCreateView: geopoint: " + userLocation.getGeo_point().getLatitude() + ", " + userLocation.getGeo_point().getLongitude());
             }
+
+            setUserPosition();
         }
 
         return view;
+    }
+
+    private void setCameraView(){
+        double bottomBoundary = mUserPosition.getGeo_point().getLatitude() - .05;
+        double leftBoundary = mUserPosition.getGeo_point().getLongitude() - .05;
+        double topBoundary = mUserPosition.getGeo_point().getLatitude() + .05;
+        double rightBoundary = mUserPosition.getGeo_point().getLongitude() + .05;
+
+        mMapBoundary = new LatLngBounds(
+                new LatLng(bottomBoundary, leftBoundary),
+                new LatLng(topBoundary, rightBoundary)
+
+        );
+
+        mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(mMapBoundary, 0));
+    }
+
+    private void setUserPosition(){
+        for(UserLocation userLocation : mUserLocationList){
+            if(userLocation.getUser().getUser_id().equals(FirebaseAuth.getInstance().getUid())){
+                mUserPosition = userLocation;
+            }
+        }
     }
 
     private void initGoogleMap(Bundle savedInstanceState){
@@ -136,6 +168,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
         map.setMyLocationEnabled(true);
         mGoogleMap = map;
         mGoogleMap.setOnInfoWindowClickListener(this);
+
+        setCameraView();
     }
 
     @Override

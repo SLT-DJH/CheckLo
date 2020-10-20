@@ -58,7 +58,7 @@ import static com.example.checklo.Constants.PERMISSIONS_REQUEST_ENABLE_GPS;
 public class MapActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "MapActivity";
-    private static Integer status = 1001;
+    private static Integer status = 1002;
 
     //widgets
     private User mUser;
@@ -82,16 +82,17 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
         getUsers();
 
-        inflateLocationFragment();
+        Fragment chatboardfragment = new ChatboardFragment();
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, chatboardfragment).commit();
 
         ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
         profile.setImageResource(R.drawable.profile);
 
         ImageView location = (ImageView) findViewById(R.id.locationMenuButton);
-        location.setImageResource(R.drawable.location_clicked);
+        location.setImageResource(R.drawable.location);
 
         ImageView chatboard = (ImageView) findViewById(R.id.chatboardMenuButton);
-        chatboard.setImageResource(R.drawable.chat);
+        chatboard.setImageResource(R.drawable.chat_clicked);
 
         profile.setOnClickListener(this);
         location.setOnClickListener(this);
@@ -128,8 +129,6 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
                 }
             }
         });
-
-
 
     }
 
