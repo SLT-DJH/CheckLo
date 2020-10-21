@@ -58,7 +58,7 @@ import static com.example.checklo.Constants.PERMISSIONS_REQUEST_ENABLE_GPS;
 public class MapActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "MapActivity";
-    private static Integer status = 1002;
+    private static int status = 1000;
 
     //widgets
     private User mUser;
@@ -71,6 +71,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
     private FirebaseFirestore mDb;
     private ArrayList<UserLocation> mUserLocationList = new ArrayList<>();
     private ArrayList<User> mUserList = new ArrayList<>();
+    private Fragment profileFragment, mapFragment, chatboardFragment;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -82,8 +83,11 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
         getUsers();
 
-        Fragment chatboardfragment = new ChatboardFragment();
-        getSupportFragmentManager().beginTransaction().replace(R.id.container, chatboardfragment).commit();
+        chatboardFragment = new ChatboardFragment();
+        profileFragment = new ProfileFragment();
+        mapFragment = new MapFragment();
+
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, chatboardFragment).commit();
 
         ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
         profile.setImageResource(R.drawable.profile);
@@ -329,6 +333,8 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
     @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, "onResume");
+        status = 1000;
 
         if(checkMapServices()){
             if(mLocationPermissionGranted){
@@ -343,24 +349,26 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
     private void inflateLocationFragment(){
         Log.d(TAG, "inflateLocationFragment called");
-        Fragment mapfragment = new MapFragment();
+
+        Fragment updatedMapFragment = new MapFragment();
+
         Bundle bundle = new Bundle();
         bundle.putParcelableArrayList(getString(R.string.intent_user_list), mUserList);
         bundle.putParcelableArrayList(getString(R.string.intent_user_locations), mUserLocationList);
-        mapfragment.setArguments(bundle);
+        updatedMapFragment.setArguments(bundle);
 
-        getSupportFragmentManager().beginTransaction().replace(R.id.container, mapfragment).commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, updatedMapFragment).commit();
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.profileMenuButton:{
-                if (status != 1000) {
+                Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
+                if (current != profileFragment) {
                     status = 1000;
 
-                    Fragment profilefragment = new ProfileFragment();
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, profilefragment).commit();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.container, profileFragment).commit();
 
                     ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
                     profile.setImageResource(R.drawable.profile_click);
@@ -379,7 +387,8 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
             }
             case R.id.locationMenuButton:{
-                if(status != 1001){
+                Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
+                if(current != mapFragment && status != 1001){
                     status = 1001;
 
                     inflateLocationFragment();
@@ -400,11 +409,11 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
 
             }
             case R.id.chatboardMenuButton:{
-                if (status != 1002){
-                    status = 1002;
+                Fragment current = getSupportFragmentManager().findFragmentById(R.id.container);
+                if (current != chatboardFragment){
+                    status = 1000;
 
-                    Fragment chatboardfragment = new ChatboardFragment();
-                    getSupportFragmentManager().beginTransaction().replace(R.id.container, chatboardfragment).commit();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.container, chatboardFragment).commit();
 
                     ImageView profile = (ImageView) findViewById(R.id.profileMenuButton);
                     profile.setImageResource(R.drawable.profile);

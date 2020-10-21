@@ -3,6 +3,7 @@ package com.example.checklo;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,8 +18,10 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
+import com.example.checklo.models.ClusterMarker;
 import com.example.checklo.models.User;
 import com.example.checklo.models.UserLocation;
+import com.example.checklo.util.MyClusterManagerRenderer;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -28,6 +31,7 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.maps.android.clustering.ClusterManager;
 
 import java.util.ArrayList;
 
@@ -47,6 +51,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
     private ArrayList<UserLocation> mUserLocationList = new ArrayList<>();
     private LatLngBounds mMapBoundary;
     private UserLocation mUserPosition;
+    private ClusterManager mClusterManager;
+    private MyClusterManagerRenderer mClusterManagerRenderer;
+    private ArrayList<ClusterMarker> mClusterMarkers = new ArrayList<>();
+    private Handler mHandler = new Handler();
+    private Runnable mRunnable;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -80,6 +89,55 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
 
         return view;
     }
+
+    private void addMapMarkers(){
+
+        if(mGoogleMap != null){
+            if(mClusterManager == null){
+                mClusterManager = new ClusterManager<ClusterMarker>(getActivity().getApplicationContext(), mGoogleMap);
+            }
+            if(mClusterManagerRenderer == null){
+                mClusterManagerRenderer = new MyClusterManagerRenderer(
+                        getActivity(),
+                        mGoogleMap,
+                        mClusterManager
+                );
+                mClusterManager.setRenderer(mClusterManagerRenderer);
+            }
+
+            for(UserLocation userLocation : mUserLocationList){
+                Log.d(TAG, "addMarkers : location :" + userLocation.getGeo_point().toString());
+                try{
+                    String snippet;
+                    if(userLocation.getUser().getUser_id().equals(FirebaseAuth.getInstance().getUid())){
+                        snippet = "This is you";
+                    }
+                    else{
+                        snippet = "Determine route to " + userLocation.getUser().getUsername() + "?";
+                    }
+
+                    int avatar = R.drawable.profile_default;
+
+                    ClusterMarker newClusterMarker = new ClusterMarker(
+                            new LatLng(userLocation.getGeo_point().getLatitude(), userLocation.getGeo_point().getLongitude()),
+                            userLocation.getUser().getUsername(),
+                            snippet,
+                            avatar,
+                            userLocation.getUser()
+                    );
+                    mClusterManager.addItem(newClusterMarker);
+                    mClusterMarkers.add(newClusterMarker);
+                }catch (NullPointerException e){
+                    Log.e(TAG, "addMapMarkers: NullPointerException : " + e.getMessage());
+                }
+            }
+            mClusterManager.cluster();
+
+            setCameraView();
+        }
+
+    }
+
 
     private void setCameraView(){
         double bottomBoundary = mUserPosition.getGeo_point().getLatitude() - .05;
@@ -167,9 +225,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
         }
         map.setMyLocationEnabled(true);
         mGoogleMap = map;
+        addMapMarkers();
         mGoogleMap.setOnInfoWindowClickListener(this);
-
-        setCameraView();
     }
 
     @Override
