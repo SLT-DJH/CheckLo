@@ -31,13 +31,15 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.maps.android.clustering.Cluster;
+import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
 
 import java.util.ArrayList;
 
 import static com.example.checklo.Constants.MAPVIEW_BUNDLE_KEY;
 
-public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnInfoWindowClickListener {
+public class MapFragment extends Fragment implements OnMapReadyCallback {
     private static final String TAG = "MapFragment";
     private static final int LOCATION_UPDATE_INTERVAL = 3000;
 
@@ -110,10 +112,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
                 try{
                     String snippet;
                     if(userLocation.getUser().getUser_id().equals(FirebaseAuth.getInstance().getUid())){
-                        snippet = "This is you";
+                        snippet = "현 위치";
                     }
                     else{
-                        snippet = "Determine route to " + userLocation.getUser().getUsername() + "?";
+                        snippet = userLocation.getUser().getUsername() + "와 채팅하시겠습니까?";
                     }
 
                     int avatar = R.drawable.profile_default;
@@ -132,8 +134,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
                 }
             }
             mClusterManager.cluster();
+            mClusterManager.setOnClusterItemInfoWindowClickListener(new ClusterManager.OnClusterItemInfoWindowClickListener() {
+                @Override
+                public void onClusterItemInfoWindowClick(ClusterItem item) {
+                    Log.d(TAG, "Clicked" + item.getTitle());
+                }
+            });
 
-            setCameraView();
+            if (mUserPosition != null) {
+                setCameraView();
+            }
         }
 
     }
@@ -191,14 +201,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
     }
 
     @Override
-    public void onInfoWindowClick(Marker marker) {
-
-        Log.d(TAG, "Clicked");
-        Toast.makeText(getContext(), "Clicked", Toast.LENGTH_SHORT).show();
-
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
         mMapView.onResume();
@@ -226,7 +228,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
         map.setMyLocationEnabled(true);
         mGoogleMap = map;
         addMapMarkers();
-        mGoogleMap.setOnInfoWindowClickListener(this);
     }
 
     @Override
