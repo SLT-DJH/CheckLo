@@ -1,6 +1,8 @@
 package com.example.checklo;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -30,7 +32,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.maps.android.clustering.Cluster;
 import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
@@ -92,6 +99,68 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return view;
     }
 
+    private void startUserLocationsRunnable(){
+        Log.d(TAG, "startUserLocationsRunnable: starting runnable for retrieving updated locations.");
+        mHandler.postDelayed(mRunnable = new Runnable() {
+            @Override
+            public void run() {
+                retrieveUserLocations();
+                mHandler.postDelayed(mRunnable, LOCATION_UPDATE_INTERVAL);
+            }
+        }, LOCATION_UPDATE_INTERVAL);
+    }
+
+    private void stopLocationUpdates(){
+        mHandler.removeCallbacks(mRunnable);
+    }
+
+    private void retrieveUserLocations(){
+        Log.d(TAG, "retrieveUserLocations: retrieving location of all users in the chatroom.");
+
+        try{
+            for(final ClusterMarker clusterMarker: mClusterMarkers){
+
+                DocumentReference userLocationRef = FirebaseFirestore.getInstance()
+                        .collection(getString(R.string.collection_user_locations))
+                        .document(clusterMarker.getUser().getUser_id());
+
+                userLocationRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                        if(task.isSuccessful()){
+
+                            final UserLocation updatedUserLocation = task.getResult().toObject(UserLocation.class);
+
+                            // update the location
+                            for (int i = 0; i < mClusterMarkers.size(); i++) {
+                                try {
+                                    if (mClusterMarkers.get(i).getUser().getUser_id().equals(updatedUserLocation.getUser().getUser_id())) {
+
+                                        LatLng updatedLatLng = new LatLng(
+                                                updatedUserLocation.getGeo_point().getLatitude(),
+                                                updatedUserLocation.getGeo_point().getLongitude()
+                                        );
+
+                                        mClusterMarkers.get(i).setPosition(updatedLatLng);
+                                        mClusterManagerRenderer.setUpdateMarker(mClusterMarkers.get(i));
+
+                                    }
+
+
+                                } catch (NullPointerException e) {
+                                    Log.e(TAG, "retrieveUserLocations: NullPointerException: " + e.getMessage());
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }catch (IllegalStateException e){
+            Log.e(TAG, "retrieveUserLocations: Fragment was destroyed during Firestore query. Ending query." + e.getMessage() );
+        }
+
+    }
+
     private void addMapMarkers(){
 
         if(mGoogleMap != null){
@@ -137,7 +206,26 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             mClusterManager.setOnClusterItemInfoWindowClickListener(new ClusterManager.OnClusterItemInfoWindowClickListener() {
                 @Override
                 public void onClusterItemInfoWindowClick(ClusterItem item) {
-                    Log.d(TAG, "Clicked" + item.getTitle());
+                    if (item.getSnippet().equals("현 위치")){
+                        Log.d(TAG, "Snippet equals");
+                    }else {
+                        Log.d(TAG, "Snippet different");
+                        final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                        builder.setMessage(item.getSnippet())
+                                .setCancelable(true).setPositiveButton("네", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        }).setNegativeButton("아니오", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.cancel();
+                            }
+                        });
+                        final AlertDialog alertDialog = builder.create();
+                        alertDialog.show();
+                    }
                 }
             });
 
@@ -204,6 +292,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onResume() {
         super.onResume();
         mMapView.onResume();
+        startUserLocationsRunnable();
     }
 
     @Override
@@ -240,6 +329,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onDestroy() {
         mMapView.onDestroy();
         super.onDestroy();
+        stopLocationUpdates();
     }
 
     @Override
