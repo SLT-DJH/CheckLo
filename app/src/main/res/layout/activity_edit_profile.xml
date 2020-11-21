@@ -131,7 +131,7 @@
                                 android:textSize="20sp"
                                 android:textStyle="bold" />
 
-                            <TextView
+                            <EditText
                                 android:id="@+id/profileNameTextView"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -142,6 +142,14 @@
                                 android:textStyle="bold" />
 
                         </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/nameSaveTextView"
+                            android:textColor="@color/Black"
+                            android:layout_width="380dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="right"
+                            android:text="저장하기" />
 
                     </LinearLayout>
 

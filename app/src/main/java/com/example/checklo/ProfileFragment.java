@@ -27,6 +27,8 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -42,6 +44,7 @@ public class ProfileFragment extends Fragment implements View.OnClickListener {
     private ImageView profileImage, nextButtonImage;
     private TextView userName, userIntroduction;
     private LinearLayout signoutLayout;
+    private FirebaseFirestore mdb;
 
     @Nullable
     @Override
@@ -55,12 +58,7 @@ public class ProfileFragment extends Fragment implements View.OnClickListener {
         signoutLayout = view.findViewById(R.id.signoutView);
 
         retrieveProfileImage();
-
-        userName = view.findViewById(R.id.profileNameTextView);
-        userName.setText(((UserClient)getActivity().getApplicationContext()).getUser().getUsername());
-
-        userIntroduction = view.findViewById(R.id.myIntroductionTextView);
-        userIntroduction.setText(((UserClient)getActivity().getApplicationContext()).getUser().getUserintroduction());
+        retrieveProfiledata(view);
 
         ImageView settingImage = view.findViewById(R.id.settingImageView);
 
@@ -69,6 +67,15 @@ public class ProfileFragment extends Fragment implements View.OnClickListener {
         signoutLayout.setOnClickListener(this);
 
         return view;
+    }
+
+    private void retrieveProfiledata(View view){
+        userName = view.findViewById(R.id.profileNameTextView);
+        userIntroduction = view.findViewById(R.id.myIntroductionTextView);
+
+        userName.setText(((UserClient)getActivity().getApplicationContext()).getUser().getUsername());
+        userIntroduction.setText(((UserClient)getActivity().getApplicationContext()).getUser().getUserintroduction());
+
     }
 
     private void retrieveProfileImage(){
@@ -93,9 +100,8 @@ public class ProfileFragment extends Fragment implements View.OnClickListener {
 
                             Glide.with(getActivity())
                                     .load(task.getResult())
+                                    .thumbnail(0.5f)
                                     .into(profileImage);
-
-                            Toast.makeText(getActivity().getApplicationContext(), "다운로드 완료!", Toast.LENGTH_SHORT).show();
                         }else {
                             Toast.makeText(getActivity().getApplicationContext(), "태스크 실패!", Toast.LENGTH_SHORT).show();
                         }

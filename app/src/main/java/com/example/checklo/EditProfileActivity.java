@@ -31,7 +31,11 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.model.Document;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -46,8 +50,9 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
     private static final String TAG = "EditProfileActivity";
 
     private ImageView profileImage;
-    private TextView userName;
+    private EditText userName;
     private EditText introductiontext;
+    private FirebaseFirestore mdb;
 
     private static final int IMAGE_PICK_CODE = 1000;
     private static final int PERMISSION_CODE = 1001;
@@ -60,26 +65,31 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
         profileImage = findViewById(R.id.profileImageView);
 
         retrieveProfileImage();
-
-        userName = findViewById(R.id.profileNameTextView);
-        userName.setText(((UserClient)getApplicationContext()).getUser().getUsername());
-
-        introductiontext = findViewById(R.id.introductionInputText);
-        introductiontext.setText(((UserClient)getApplicationContext()).getUser().getUserintroduction());
+        retrieveProfiledata();
 
         ImageView changeImage = findViewById(R.id.changePictureImageView);
         changeImage.setImageResource(R.drawable.camera);
         ImageView backImage = findViewById(R.id.backBarImageView);
         backImage.setImageResource(R.drawable.back_button);
         TextView saveIntroduction = findViewById(R.id.introductionSaveTextView);
+        TextView savename = findViewById(R.id.nameSaveTextView);
 
         changeImage.setOnClickListener(this);
         backImage.setOnClickListener(this);
         profileImage.setOnClickListener(this);
         saveIntroduction.setOnClickListener(this);
+        savename.setOnClickListener(this);
 
         Intent intent = new Intent();
         setResult(RESULT_OK, intent);
+    }
+
+    private void retrieveProfiledata(){
+        userName = findViewById(R.id.profileNameTextView);
+        introductiontext = findViewById(R.id.introductionInputText);
+
+        userName.setText(((UserClient)getApplicationContext()).getUser().getUsername());
+        introductiontext.setText(((UserClient)getApplicationContext()).getUser().getUserintroduction());
     }
 
     private void retrieveProfileImage(){
@@ -102,9 +112,9 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
                     Glide
                             .with(EditProfileActivity.this)
                             .load(task.getResult())
+                            .thumbnail(0.5f)
                             .into(profileImage);
 
-                    Toast.makeText(getApplicationContext(), "다운로드 완료!", Toast.LENGTH_SHORT).show();
                 }else {
                     Toast.makeText(getApplicationContext(), "태스크 실패!", Toast.LENGTH_SHORT).show();
                 }
@@ -212,6 +222,7 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
 
     @Override
     public void onClick(View v) {
+
         switch (v.getId()){
             case R.id.profileImageView:{
                 changePicture();
@@ -225,7 +236,43 @@ public class EditProfileActivity extends AppCompatActivity implements View.OnCli
                 onBackPressed();
                 break;
             }
+            case R.id.nameSaveTextView:{
+
+                EditText editText = findViewById(R.id.profileNameTextView);
+
+                if (editText.getText().toString().length() != 0) {
+                    mdb = FirebaseFirestore.getInstance();
+                    DocumentReference usersRef = mdb.collection(getString(R.string.collection_users)).document(FirebaseAuth.getInstance().getUid());
+
+                    User user = new User();
+                    user.setUsername(editText.getText().toString());
+
+                    usersRef.update("username", user.getUsername()).addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            Toast.makeText(getApplicationContext(), "변경 완료!", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+                break;
+            }
             case R.id.introductionSaveTextView:{
+                EditText editText = findViewById(R.id.introductionInputText);
+
+                if (editText.getText().toString().length() != 0){
+                    mdb = FirebaseFirestore.getInstance();
+                    DocumentReference userRef = mdb.collection(getString(R.string.collection_users)).document(FirebaseAuth.getInstance().getUid());
+
+                    User user = new User();
+                    user.setUserintroduction(editText.getText().toString());
+
+                    userRef.update("userintroduction", user.getUserintroduction()).addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            Toast.makeText(getApplicationContext(), "변경 완료!", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
                 break;
             }
         }
